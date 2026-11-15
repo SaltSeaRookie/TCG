@@ -160,11 +160,22 @@ background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,.18) 0 28%,t
 .duel .vd{font-size:clamp(18px,3.8vh,26px);margin:2px 0;line-height:1.25}
 .vd.win{color:#e8412b}.vd.lose{color:#2a6fb8}
 .pick{background:rgba(21,21,21,.86);pointer-events:auto;padding:10px;gap:8px}
-.pick h3{color:#fff;font-weight:900;font-size:18px}
-.pick .row{display:flex;gap:12px;height:62%;justify-content:center}
-.pick .row button{height:100%;aspect-ratio:400/558;border-radius:7%;overflow:hidden;border:3px solid #fff}
-.pick .row button .cv{width:100%;height:100%;border-radius:0}
-.pick p{color:#fff;font-size:12px;opacity:.8}
+.pick{align-items:stretch!important;justify-content:stretch!important}
+.pk{display:flex;gap:10px;width:100%;height:100%;min-height:0}
+.pkL{flex:none;height:100%;display:flex;align-items:center;justify-content:center}
+.pkPrev{position:relative}
+.pkPrev .cv{width:100%;height:100%;box-shadow:0 0 0 3px #fff,0 6px 18px rgba(0,0,0,.5)}
+.pkR{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;min-height:0}
+.pkR h3{color:#fff;font-weight:900;font-size:15px;line-height:1.2}
+.pkList{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.pkItem{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.12);border:2px solid transparent;border-radius:12px;padding:4px;color:#fff;cursor:pointer}
+.pkItem.on{background:#fff;color:var(--ink);border-color:var(--yellow);box-shadow:0 0 0 2px var(--ink)}
+.pkThumb{flex:none;width:40px;height:56px}
+.pkThumb .cv{width:100%;height:100%;border-radius:5px}
+.pkTx{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.pkTx b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkTx span{font-size:11px;font-weight:700;opacity:.85;white-space:nowrap}
+.pkGo{flex:none;width:100%;padding:9px 8px!important;font-size:15px!important;letter-spacing:.02em!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .peek{background:rgba(21,21,21,.8)}
 .peek img{height:86%;border-radius:7%}
 .midbar{flex:none;height:44px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 10px;color:var(--yellow);font-weight:900;z-index:7}
@@ -686,7 +697,8 @@ function bindHalves(){
       else if(b.dataset.a==='again'){tone(660);musStart(true);newGame();if(NET.on){NET.send({t:'again'});startBuild(NET.me)}else passTo(0,'build')}
       else if(b.dataset.a==='home')goHome();
       else if(b.dataset.a==='draw'){clearTimers();netClose();openDraw()}});
-    R(i,'pick').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&isMine(i))onPick(i,+b.dataset.k)});
+    R(i,'pick').addEventListener('click',e=>{if(!isMine(i))return;const it=e.target.closest('.pkItem');if(it){pkSelect(i,+it.dataset.k);return}
+      if(e.target.closest('.pkGo')&&S.pk!=null)onPick(i,S.pk)});
     R(i,'team').addEventListener('pointerdown',e=>{const m=e.target.closest('.mini');if(!m||!isMine(i))return;
       const k=+m.dataset.k,ov=R(i,'peek');ov.querySelector('img').src=IMG[S.p[i].deck[k]];ov.classList.add('show');buzz(10)});
   });
@@ -721,7 +733,7 @@ function renderCtrl(i){
     else{const c=CARDS[p.deck[p.active]],mx=Math.max(...c.dmg);
       el.innerHTML=GS.map((g,k)=>`<button class="gbtn ${c.dmg[k]===mx&&new Set(c.dmg).size>1?'best':''}" data-g="${g}"><span class="ge">${GE[g]}</span><span class="gd">${c.dmg[k]}<small> 傷害</small></span></button>`).join('')}
   } else if(ph==='replace'){
-    el.innerHTML=i===S.loser?`<div class="txt">選擇下一位登場角色</div>`:`<div class="txt">對手正在挑選下一張…</div>`;
+    el.innerHTML=i===S.loser?'':`<div class="txt">對手正在挑選下一張…</div>`;
   } else if(ph==='over'){
     el.innerHTML=`<button class="btn yellow sm" data-a="again">再來一局</button>${NET.on&&SV.pts>=1?'<button class="btn sm" data-a="draw">🎴 去抽卡</button>':''}<button class="btn white sm" data-a="home">回首頁</button>`;
   } else el.innerHTML='';
@@ -798,10 +810,23 @@ async function knockOut(l){
   if(L.ko.every(x=>x)){gameOver(1-l);return}
   S.phase='replace';S.loser=l;renderAll();
   if(!isMine(l)){if(S.pendingPick!=null){const k=S.pendingPick;S.pendingPick=null;onPick(l,k,true)}return}
-  const ov=R(l,'pick');
-  ov.innerHTML=`<h3>從手牌挑選下一張登場</h3><div class="row">${L.deck.map((id,k)=>L.ko[k]?'':`<button data-k="${k}">${cardHTML(id,{holo:L.fx.has(id)})}</button>`).join('')}</div><p>點選後會直接明牌翻開</p>`;
-  ov.classList.add('show');
+  showPicker(l);
 }
+function showPicker(l){
+  const L=S.p[l],ov=R(l,'pick'),alive=[0,1,2].filter(k=>!L.ko[k]);
+  ov.innerHTML=`<div class="pk"><div class="pkL"><div class="pkPrev"></div></div><div class="pkR"><h3>從手牌選下一張登場</h3><div class="pkList">${alive.map(k=>{const id=L.deck[k],c=CARDS[id];
+    return `<div class="pkItem" data-k="${k}"><div class="pkThumb">${cardHTML(id,{holo:L.fx.has(id)})}</div><div class="pkTx"><b>${c.name}</b><span>${ATTR[c.attr].i}${ATTR[c.attr].n}・HP ${L.hp[k]}</span><span>✌️${c.dmg[0]} ✊${c.dmg[1]} ✋${c.dmg[2]}</span></div></div>`}).join('')}</div>
+    <button class="btn yellow pkGo">派出登場！</button></div></div>`;
+  ov.classList.add('show');
+  const lft=ov.querySelector('.pkL'),pv=ov.querySelector('.pkPrev');
+  const h=Math.max(80,lft.clientHeight),w=Math.min(Math.floor(h*400/558),Math.floor(ov.clientWidth*0.48));
+  pv.style.width=w+'px';pv.style.height=Math.floor(w*558/400)+'px';
+  pkSelect(l,alive[0]);
+}
+function pkSelect(l,k){const L=S.p[l],ov=R(l,'pick'),id=L.deck[k];S.pk=k;
+  ov.querySelectorAll('.pkItem').forEach(x=>x.classList.toggle('on',+x.dataset.k===k));
+  ov.querySelector('.pkPrev').innerHTML=cardHTML(id,{holo:L.fx.has(id)});
+  ov.querySelector('.pkGo').textContent=`派出 ${CARDS[id].name} 登場！`;tone(520,.05,'triangle',.05)}
 async function onPick(i,k,remote){
   if(remote&&S.phase!=='replace'){S.pendingPick=k;return}
   if(S.phase!=='replace'||i!==S.loser)return;
