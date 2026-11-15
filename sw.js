@@ -3,7 +3,7 @@
      when offline the cached copy is used.
    - Icons / manifest are cached on install; fonts and other CDN files are cached the first time they load.
    - Requests carrying ?vc= (the in-game version check) always go to the network. */
-const CACHE = 'yjn-tcg-v1';
+const CACHE = 'yjn-tcg-v2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
