@@ -1,0 +1,19 @@
+{
+  "name": "鹽海新鮮人 集換式卡牌遊戲",
+  "short_name": "鹽海新鮮人",
+  "description": "雲嘉南「雲、嘉、南！」猜拳卡牌對戰，收集限定卡與隱藏版。",
+  "lang": "zh-Hant-TW",
+  "id": "./",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#4a9be8",
+  "theme_color": "#4a9be8",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
