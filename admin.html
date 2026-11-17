@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://*.supabase.co https://*.supabase.in; base-uri 'none'; form-action 'none'">
+<title>鹽海新鮮人 後台</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--ink:#1d1d1b;--ink2:#5c5c58;--muted:#8a8a85;--line:#e4e4df;--grid:#ececE7;
+  --s1:#2a78d6;--s2:#eb6834;--accent:#2a78d6;--bad:#c4361f}
+@media (prefers-color-scheme:dark){:root{--bg:#121211;--card:#1a1a19;--ink:#ededea;--ink2:#b5b5b0;--muted:#8a8a85;--line:#2c2c2a;--grid:#262624;--s1:#3987e5;--s2:#d95926;--accent:#3987e5;--bad:#ef6a52}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Noto Sans TC",sans-serif;padding:16px}
+h1{font-size:20px}h2{font-size:15px;margin-bottom:8px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+input{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 10px;width:100%}
+.wrap{max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+#login{max-width:360px;margin:12vh auto}#login .card{display:flex;flex-direction:column;gap:10px}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}.top h1{flex:1}
+.muted{color:var(--muted);font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}.tile .l{color:var(--ink2);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.grid2 .card{margin-bottom:0}
+.chart{width:100%;height:180px;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin-bottom:6px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.hb{display:grid;grid-template-columns:150px 1fr 110px;gap:8px;align-items:center;font-size:12px;padding:3px 0}
+.hb .n{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hb .t{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
+.hb .bar{height:12px;background:var(--grid);border-radius:4px;overflow:hidden}.hb .bar i{display:block;height:100%;background:var(--s1);border-radius:0 4px 4px 0}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--ink2);font-weight:600;cursor:pointer;user-select:none}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--grid)}
+.tscroll{overflow:auto;max-height:520px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.row input{max-width:260px}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:9;white-space:nowrap}
+#detail{display:none}#detail.on{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips span{border:1px solid var(--line);border-radius:99px;padding:2px 9px;font-size:12px}
+.chips span.off{color:var(--muted);border-style:dashed}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+
+<section id="login">
+  <div class="card">
+    <h1>🔒 鹽海新鮮人 後台</h1>
+    <p class="muted">管理員專用。請用 Supabase 裡建立的管理員帳號登入。</p>
+    <input id="em" type="email" placeholder="Email" autocomplete="username">
+    <input id="pw" type="password" placeholder="密碼" autocomplete="current-password">
+    <button class="pri" id="go">登入</button>
+    <div class="err" id="err"></div>
+  </div>
+</section>
+
+<section id="app" class="wrap" hidden>
+  <div class="top"><h1>鹽海新鮮人 後台</h1><span class="muted" id="who"></span><button id="reload">重新整理</button><button id="csv">匯出玩家 CSV</button><button id="out">登出</button></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="grid2">
+    <div class="card"><h2>每日活躍玩家（近 30 天）</h2><svg class="chart" id="cDau"></svg></div>
+    <div class="card"><h2>每日新玩家（近 30 天）</h2><svg class="chart" id="cNew"></svg></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid2">
+    <div class="card"><h2>每日任務：完成 vs 領取（近 14 天）</h2><div class="legend"><span><i style="background:var(--s1)"></i>完成</span><span><i style="background:var(--s2)"></i>領取</span></div><svg class="chart" id="cTask"></svg></div>
+    <div class="card"><h2>目前連續簽到天數分布</h2><svg class="chart" id="cStreak"></svg></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="grid2">
+    <div class="card"><h2>卡片持有率（擁有的玩家比例・平均張數）</h2><div id="cards"></div></div>
+    <div class="card"><h2>成就解鎖率</h2><div id="achs"></div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="card" id="detail"></div>
+  <div class="card">
+    <h2>玩家列表</h2>
+    <div class="row"><input id="q" placeholder="搜尋匿名 ID"><span class="muted" id="cnt"></span></div>
+    <div class="tscroll"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+  </div>
+  <p class="muted">資料只包含遊戲隨機產生的匿名 ID、回訪與卡冊資訊，沒有任何個人資料或 IP。日期以台灣時間計算。</p>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
+<script>
+/* Same project URL + publishable/anon key as the game (public by design). Reading data needs an admin login. */
+const SB={url:'',key:''};
+
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const NAMES=['阿皮','阿咻','鹹味兄弟','阿波','阿光'],SER=['經典','觀鳥','鹽祭'];
+const CARD=i=>i===15?'財源滾滾（隱藏版）':`${NAMES[i%5]}・${SER[Math.floor(i/5)]}`;
+const ACH=[['win1','首勝'],['str5','5 連勝'],['win30','30 勝'],['pf','完美勝利'],['hidwin','財源滾滾獲勝'],['bird','集滿觀鳥馬拉松'],['salt','集滿平安鹽祭'],['all','全圖鑑'],['silver','銀框卡'],['gold','金框卡'],['onl10','連線 10 場'],['week','全勤一週'],['salt20','曬鹽職人'],['task20','任務達人'],['draw30','抽卡 30 次']];
+const TASK={wp:'用布贏 1 回合',wr:'用石頭贏 2 回合',ws:'用剪刀贏 2 回合',r5:'猜拳贏 5 回合',ko2:'打倒對手 2 張卡',ko5:'打倒對手 5 張卡',tie:'猜拳平手 2 次',d55:'一拳 55 傷害',dmg:'累計 300 傷害',g2:'完成 2 場對戰',win:'獲勝 1 場',cpu:'單人挑戰獲勝',onl:'完成 1 場連線',onw:'連線獲勝 1 場',pf:'無傷獲勝',sea:'海屬性先鋒',sun:'太陽屬性先鋒',wind:'風屬性先鋒',oth:'其他屬性先鋒',ltd:'帶 2 張限定卡',draw:'抽卡 1 次',salt:'收成鹽田 1 次'};
+
+if(!SB.url||!SB.key){$('#err').textContent='尚未設定 Supabase 專案網址與金鑰（admin.html 裡的 SB）。'}
+const sb=SB.url&&SB.key&&window.supabase?supabase.createClient(SB.url,SB.key,{auth:{storage:sessionStorage,persistSession:true,autoRefreshToken:true}}):null;
+
+/* ---------- auth ---------- */
+async function login(){const em=$('#em').value.trim(),pw=$('#pw').value;$('#err').textContent='';
+  if(!sb){$('#err').textContent='尚未設定 Supabase。';return}
+  $('#go').disabled=true;const {error}=await sb.auth.signInWithPassword({email:em,password:pw});$('#go').disabled=false;$('#pw').value='';
+  if(error){$('#err').textContent='登入失敗：帳號或密碼錯誤，或嘗試太多次請稍後再試。';return}
+  enter()}
+async function enter(){const {data:{session}}=await sb.auth.getSession();if(!session)return;
+  const {data:ok,error}=await sb.rpc('is_admin');
+  if(error||!ok){await sb.auth.signOut();$('#err').textContent='這個帳號沒有管理權限。';return}
+  $('#who').textContent=session.user.email;$('#login').hidden=true;$('#app').hidden=false;load()}
+$('#go').onclick=login;$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('#reload').onclick=()=>load();
+if(sb)enter();
+
+/* ---------- data ---------- */
+async function all(table,cols,order){const out=[];for(let i=0;;i+=1000){const {data,error}=await sb.from(table).select(cols).order(order).range(i,i+999);
+  if(error)throw error;out.push(...data);if(data.length<1000)break}return out}
+const tw=d=>d.toLocaleDateString('sv-SE',{timeZone:'Asia/Taipei'});
+const addDay=(s,n)=>{const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+let P=[],V=[],sortK='last_seen',sortD=-1;
+async function load(){$('#tiles').innerHTML='<div class="tile"><div class="l">載入中…</div></div>';
+  try{[P,V]=await Promise.all([all('players','*','pid'),all('visits','pid,day,opens,task_ids,tasks_done,tasks_claimed','day')])}
+  catch(e){$('#tiles').innerHTML=`<div class="tile"><div class="l">讀取失敗：${esc(e.message)}</div></div>`;return}
+  render()}
+
+function render(){
+  const today=tw(new Date()),d7=addDay(today,-6),d30=addDay(today,-29);
+  const byP={};V.forEach(v=>{(byP[v.pid]=byP[v.pid]||[]).push(v.day)});
+  const first={};Object.entries(byP).forEach(([p,ds])=>{first[p]=ds.reduce((a,b)=>a<b?a:b)});
+  const act=(from)=>new Set(V.filter(v=>v.day>=from&&v.day<=today).map(v=>v.pid)).size;
+  let d1n=0,d1d=0,d7n=0,d7d=0;
+  Object.entries(byP).forEach(([p,ds])=>{const f=first[p],set=new Set(ds);
+    if(f<=addDay(today,-1)){d1d++;if(set.has(addDay(f,1)))d1n++}
+    if(f<=addDay(today,-7)){d7d++;for(let k=1;k<=7;k++)if(set.has(addDay(f,k))){d7n++;break}}});
+  const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const tiles=[['總玩家數',P.length],['今日活躍',act(today)],['近 7 日活躍',act(d7)],['近 30 日活躍',act(d30)],
+    ['次日回訪率',pct(d1n,d1d),`${d1n}/${d1d}`],['7 日內回訪率',pct(d7n,d7d),`${d7n}/${d7d}`],
+    ['累計抽卡',P.reduce((a,p)=>a+p.draws,0)],['累計鹽田收成',P.reduce((a,p)=>a+p.salts,0)]];
+  $('#tiles').innerHTML=tiles.map(([l,v,s])=>`<div class="tile"><div class="v">${esc(v)}</div><div class="l">${esc(l)}${s?` <span class="muted">(${esc(s)})</span>`:''}</div></div>`).join('');
+  const days30=[...Array(30)].map((_,k)=>addDay(d30,k)),days14=days30.slice(-14);
+  const dau={},nw={};V.forEach(v=>{dau[v.day]=(dau[v.day]||0)+1});Object.values(first).forEach(f=>{nw[f]=(nw[f]||0)+1});
+  bars($('#cDau'),days30,[days30.map(d=>dau[d]||0)],['活躍玩家']);
+  bars($('#cNew'),days30,[days30.map(d=>nw[d]||0)],['新玩家']);
+  const td={},tc={};V.forEach(v=>{td[v.day]=(td[v.day]||0)+v.tasks_done;tc[v.day]=(tc[v.day]||0)+v.tasks_claimed});
+  bars($('#cTask'),days14,[days14.map(d=>td[d]||0),days14.map(d=>tc[d]||0)],['完成','領取']);
+  const st=[1,2,3,4,5,6,7].map(n=>P.filter(p=>p.login_day===n).length);
+  bars($('#cStreak'),['1','2','3','4','5','6','7'].map(x=>'第 '+x+' 天'),[st],['玩家'],true);
+  const N=P.length||1;
+  $('#cards').innerHTML=[...Array(16)].map((_,i)=>{const own=P.filter(p=>(p.owned[i]||0)>0),avg=own.length?(own.reduce((a,p)=>a+p.owned[i],0)/own.length).toFixed(1):'0';
+    const r=own.length/N;return hb(CARD(i),r,`${Math.round(r*100)}%・平均 ${avg} 張`,`${CARD(i)}：${own.length} 人擁有，平均 ${avg} 張`)}).join('');
+  $('#achs').innerHTML=ACH.map(([k,n])=>{const c=P.filter(p=>p.ach.includes(k)).length,r=c/N;return hb(n,r,`${Math.round(r*100)}%・${c} 人`,`${n}：${c} 人解鎖`)}).join('');
+  table()}
+
+function hb(name,r,txt,tip){return `<div class="hb" data-tip="${esc(tip)}"><span class="n">${esc(name)}</span><span class="bar"><i style="width:${Math.max(r>0?1:0,r*100)}%"></i></span><span class="t">${esc(txt)}</span></div>`}
+
+/* simple bar chart: one shared y axis, 1-2 series, hover tooltip */
+function bars(svg,labels,series,names,showAll){
+  const W=svg.clientWidth||500,H=180,pl=30,pr=6,pt=8,pb=22,iw=W-pl-pr,ih=H-pt-pb;
+  const mx=Math.max(1,...series.flat()),nice=Math.pow(10,Math.floor(Math.log10(mx))),top=Math.ceil(mx/nice)*nice;
+  const cols=['var(--s1)','var(--s2)'],g=iw/labels.length,bw=Math.max(2,(g-4)/series.length-2);
+  let h=`<g>`;[0,.5,1].forEach(f=>{const y=pt+ih-ih*f;h+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${pl-4}" y="${y+4}" font-size="10" text-anchor="end" fill="var(--muted)">${Math.round(top*f)}</text>`});
+  labels.forEach((l,i)=>{const x0=pl+i*g+2;
+    series.forEach((s,k)=>{const v=s[i],bh=v?Math.max(2,ih*v/top):0,x=x0+k*(bw+2),y=pt+ih-bh;
+      if(bh)h+=`<path d="M${x},${pt+ih}V${y+Math.min(4,bh)}q0,-4 4,-4h${bw-8>0?bw-8:0}q4,0 4,4V${pt+ih}Z" fill="${cols[k]}"/>`});
+    const tip=esc(l+'：'+series.map((s,k)=>names[k]+' '+s[i]).join('、'));
+    h+=`<rect x="${pl+i*g}" y="${pt}" width="${g}" height="${ih}" fill="transparent" data-tip="${tip}"/>`;
+    if(showAll||i%5===0||i===labels.length-1)h+=`<text x="${pl+i*g+g/2}" y="${H-6}" font-size="10" text-anchor="middle" fill="var(--muted)">${esc(showAll?l:l.slice(5))}</text>`});
+  h+=`<line x1="${pl}" x2="${W-pr}" y1="${pt+ih}" y2="${pt+ih}" stroke="var(--line)"/></g>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.innerHTML=h}
+
+/* players table */
+const COLS=[['pid','匿名 ID'],['first_seen','首次'],['last_seen','最後'],['login_day','連續簽到',1],['salts','鹽田收成',1],['tasks_claimed','任務領取',1],['draws','抽卡',1],['_cards','收集',1],['_ach','成就',1],['app_ver','版本']];
+const val=(p,k)=>k==='_cards'?Object.values(p.owned).filter(n=>n>0).length:k==='_ach'?p.ach.length:p[k];
+const fmt=t=>t?new Date(t).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+function table(){const q=$('#q').value.trim().toLowerCase();
+  const rows=P.filter(p=>!q||p.pid.includes(q)).sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);return (x>y?1:x<y?-1:0)*sortD});
+  $('#cnt').textContent=`${rows.length} 位`;
+  $('#th').innerHTML='<tr>'+COLS.map(([k,n,num])=>`<th class="${num?'num':''}" data-k="${k}">${esc(n)}${sortK===k?(sortD>0?' ▲':' ▼'):''}</th>`).join('')+'</tr>';
+  $('#tb').innerHTML=rows.slice(0,500).map(p=>`<tr data-p="${esc(p.pid)}">${COLS.map(([k,,num])=>`<td class="${num?'num':''}">${k==='pid'?`<code>${esc(p.pid)}</code>`:esc(k.endsWith('seen')?fmt(p[k]):val(p,k))}</td>`).join('')}</tr>`).join('')}
+$('#q').oninput=table;
+$('#th').onclick=e=>{const k=e.target.closest('th')?.dataset.k;if(!k)return;if(sortK===k)sortD=-sortD;else{sortK=k;sortD=-1}table()};
+$('#tb').onclick=e=>{const r=e.target.closest('tr');if(r)detail(r.dataset.p)};
+function detail(pid){const p=P.find(x=>x.pid===pid);if(!p)return;const vs=V.filter(v=>v.pid===pid).sort((a,b)=>a.day<b.day?1:-1);
+  $('#detail').innerHTML=`<div class="top"><h2 style="flex:1">玩家 <code>${esc(pid)}</code></h2><button id="dx">關閉</button></div>
+   <p class="muted">首次 ${esc(fmt(p.first_seen))}・最後 ${esc(fmt(p.last_seen))}・連續簽到第 ${esc(p.login_day)} 天（最後簽到 ${esc(p.login_last||'—')}）・全勤週數 ${esc(p.weeks)}・鹽田收成 ${esc(p.salts)} 次・任務領取 ${esc(p.tasks_claimed)} 個・抽卡 ${esc(p.draws)} 次</p>
+   <h2 style="margin-top:10px">卡冊</h2><div class="chips">${[...Array(16)].map((_,i)=>{const n=p.owned[i]||0;return `<span class="${n?'':'off'}">${esc(CARD(i))} ×${n}</span>`}).join('')}</div>
+   <h2 style="margin-top:10px">成就</h2><div class="chips">${ACH.map(([k,n])=>`<span class="${p.ach.includes(k)?'':'off'}">${esc(n)}</span>`).join('')}</div>
+   <h2 style="margin-top:10px">回訪紀錄（${vs.length} 天）</h2>
+   <div class="tscroll" style="max-height:260px"><table><thead><tr><th>日期</th><th class="num">打開次數</th><th class="num">任務完成</th><th class="num">任務領取</th><th>當天任務</th></tr></thead><tbody>
+   ${vs.map(v=>`<tr><td>${esc(v.day)}</td><td class="num">${esc(v.opens)}</td><td class="num">${esc(v.tasks_done)}/3</td><td class="num">${esc(v.tasks_claimed)}/3</td><td>${esc(v.task_ids.map(t=>TASK[t]||t).join('、'))}</td></tr>`).join('')}</tbody></table></div>`;
+  $('#detail').classList.add('on');$('#dx').onclick=()=>$('#detail').classList.remove('on');$('#detail').scrollIntoView({behavior:'smooth'})}
+
+/* CSV export */
+$('#csv').onclick=()=>{const head=['pid','first_seen','last_seen','login_day','login_last','weeks','salts','tasks_claimed','draws','app_ver',...[...Array(16)].map((_,i)=>'card_'+i),'achievements'];
+  const q=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const lines=[head.join(',')].concat(P.map(p=>[p.pid,p.first_seen,p.last_seen,p.login_day,p.login_last,p.weeks,p.salts,p.tasks_claimed,p.draws,p.app_ver,...[...Array(16)].map((_,i)=>p.owned[i]||0),p.ach.join(' ')].map(q).join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv'}));a.download=`players_${tw(new Date())}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
+
+/* tooltip */
+const tip=$('#tip');
+document.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');if(!t){tip.style.opacity=0;return}
+  tip.textContent=t.dataset.tip;tip.style.opacity=1;const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-8,e.clientX+12)+'px';tip.style.top=(e.clientY-34)+'px'});
+window.addEventListener('resize',()=>{if(!$('#app').hidden&&P.length)render()});
+</script>
+</body>
+</html>

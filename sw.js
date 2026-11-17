@@ -3,7 +3,7 @@
      when offline the cached copy is used.
    - Icons / manifest are cached on install; fonts and other CDN files are cached the first time they load.
    - Requests carrying ?vc= (the in-game version check) always go to the network. */
-const CACHE = 'yjn-tcg-v2';
+const CACHE = 'yjn-tcg-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -23,8 +23,11 @@ self.addEventListener('fetch', e => {
   if (url.searchParams.has('vc')) return;                       // version check: network only
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   if (/peerjs|0\.peerjs\.com/.test(url.hostname)) return;      // live connection server: never cache
+  if (/\.supabase\.(co|in)$/.test(url.hostname)) return;       // stats / admin data: never cache
+  if (url.origin === location.origin && /\/admin(\.html)?$/.test(url.pathname)) return;   // admin page: never cache
 
-  const isPage = req.mode === 'navigate' || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname));
+  const isPage = url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname);
+  if (req.mode === 'navigate' && !isPage) return;              // other pages are not the game: leave them alone
   if (isPage) {
     e.respondWith(
       fetch(req).then(res => {
